@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+
+# Виртуальное окружение
+venv/
+.venv/
+env/
+
+# Настройки редактора VS Code
+.vscode/
