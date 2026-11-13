@@ -1,19 +1,21 @@
 import saving
 import templates as tmp
 
+
 class record(tmp.fields):
     def __init__(self, parent, name):
         super().__init__(holding(parent, name))
 
+
 class struct(tmp.table):
     def __init__(self):
-        super().__init__(record)
+        super().__init__(record)  # type: ignore
         self.towns = towns()
         self.categories = categories()
         self.products = products()
 
     def add(self, parent, name):
-        self.things.append(self.field(parent, name))
+        self.things.append(self.field(parent, name))  # type: ignore
 
     def addCategory(self, name):
         if not self.categories.find(name):
@@ -44,9 +46,9 @@ class struct(tmp.table):
                 i.name.printHaving(twn)
 
     def save(self, file):
-        # 1. Сохранение холдингов и магазинов (stores_2.txt)
+        #stores.txt
         s = []
-        file.setName('stores_2.txt')
+        file.setName('stores.txt')
         file.open('w')
         for i in self.things:
             hld = i.name
@@ -56,22 +58,22 @@ class struct(tmp.table):
         file.writes(s)
         file.close()
 
-        # 2. Сохранение категорий и продуктов (products_2.txt)
+        #products.txt
         s = []
-        file.setName('products_2.txt')
+        file.setName('products.txt')
         file.open('w')
         for cat in self.categories.things:
             cat_name = cat.getName()
             s.append('[' + cat_name + ']\n')
             for prod in self.products.things:
-                if prod.getCategory() == cat_name:
+                if prod.getCategory() == cat_name:  # type: ignore
                     s.append(prod.getName() + '\n')
         file.writes(s)
         file.close()
 
-        # 3. Сохранение наличия по холдингам (having_2.txt)
+        #having.txt
         s = []
-        file.setName('having_2.txt')
+        file.setName('having.txt')
         file.open('w')
         for i in self.things:
             hld = i.name
@@ -87,10 +89,10 @@ class struct(tmp.table):
         for i in self.things:
             if i.name.name == name:
                 return i.name
-        return False
+        return None
 
     def read(self, file):
-        file.setName('stores_2.txt')
+        file.setName('stores.txt')
         file.open()
         hldng = None
         while (s := file.read()):
@@ -107,7 +109,7 @@ class struct(tmp.table):
                     hldng.addStore(parts[0].strip(), parts[1].strip())
         file.close()
 
-        file.setName('products_2.txt')
+        file.setName('products.txt')
         file.open()
         category = ''
         while (s := file.read()):
@@ -121,7 +123,7 @@ class struct(tmp.table):
                 self.addProduct(s, category)
         file.close()
 
-        file.setName('having_2.txt')
+        file.setName('having.txt')
         file.open()
         hldng = None
         while (s := file.read()):
@@ -133,16 +135,14 @@ class struct(tmp.table):
                 hldng = self.find(h_name)
                 if not hldng:
                     self.add(self, h_name)
-                    hldng = self.find(h_name
-
-
-)
+                    hldng = self.find(h_name)
             else:
                 parts = [p.strip() for p in s.rsplit(',', 4)]
                 town_addr = parts[0].split(',', 1)
                 if hldng:
                     hldng.addHave(town_addr[0].strip(), town_addr[1].strip(), parts[1], parts[2], parts[3], parts[4])
         file.close()
+
 
 class holding():
     def __init__(self, parent, name='Рога и копыта'):
@@ -176,13 +176,22 @@ class holding():
     def verifyHaving(self):
         return len(self.having.things) > 0
 
+    def saveStores(self):
+        return self.stores.save()
+
+    def saveHaving(self):
+        return self.having.save()
+
+
 class town(tmp.fields):
     def __init__(self, name):
         super().__init__(name)
 
+
 class towns(tmp.table):
     def __init__(self):
         super().__init__(town)
+
 
 class stores(tmp.table):
     def __init__(self):
@@ -201,6 +210,13 @@ class stores(tmp.table):
                 return True
         return False
 
+    def save(self):
+        s = []
+        for i in self.things:
+            s.append(f'{i.getTown()},{i.getAddress()}\n')  # type: ignore
+        return s
+
+
 class store(tmp.fields):
     def __init__(self, town, address):
         super().__init__(address)
@@ -212,13 +228,16 @@ class store(tmp.fields):
     def getAddress(self):
         return self.name
 
+
 class category(tmp.fields):
     def __init__(self, name):
         super().__init__(name)
 
+
 class categories(tmp.table):
     def __init__(self):
         super().__init__(category)
+
 
 class products(tmp.table):
     def __init__(self):
@@ -237,6 +256,7 @@ class products(tmp.table):
                 return True
         return False
 
+
 class product(tmp.fields):
     def __init__(self, name, category):
         super().__init__(name)
@@ -244,6 +264,7 @@ class product(tmp.fields):
 
     def getCategory(self):
         return self.category
+
 
 class have():
     def __init__(self, town, address, category, product, count, price):
@@ -253,6 +274,7 @@ class have():
         self.product = product
         self.count = count
         self.price = price
+
 
 class having(tmp.table):
     def __init__(self):
@@ -266,6 +288,13 @@ class having(tmp.table):
             if i.town == town or town == '':
                 print(f'   {i.town}, {i.address}, {i.category}, {i.product}, {i.count}, {i.price}')
 
+    def save(self):
+        s = []
+        for i in self.things:
+            s.append(f'{i.town},{i.address},{i.category},{i.product},{i.count},{i.price}\n')
+        return s
+
+
 f = saving.file()
 
 t = struct()
@@ -274,7 +303,6 @@ t.read(f)
 while True:
     cmd = input('Введите команду: ')
     if cmd == 'exit':
-
         break
     elif cmd == 'addTown':
         name = input('Введите имя: ')
@@ -288,7 +316,8 @@ while True:
         if not hld:
             t.add(t, name)
             hld = t.find(name)
-        hld.addStore(twn, addrss)
+        if hld:
+            hld.addStore(twn, addrss)
     elif cmd == 'printTowns':
         t.printTowns()
     elif cmd == 'printStores':
@@ -316,7 +345,8 @@ while True:
         if not hld:
             t.add(t, nm)
             hld = t.find(nm)
-        hld.addHave(twn, addrss, ctgr, prdct, cnt, prc)
+        if hld:
+            hld.addHave(twn, addrss, ctgr, prdct, cnt, prc)
     elif cmd == 'printHaving':
         twn = input('Введите город: ')
         t.printHaving(twn)
